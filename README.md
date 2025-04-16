@@ -25,7 +25,8 @@ RUN THE CODE:
 
     python main.py domain.yaml
 
-    where domain.yaml is a YAML file containing the endpoints of the domain with the format explained below.
+    where domain.yaml is a YAML file containing the endpoints of the domain 
+    with the format explained below.
 
 
 YAML FILE FORMAT:
@@ -47,5 +48,10 @@ YAML FILE FORMAT:
 ISSUES FIXED:
 
     - Default method GET was not set in the code causing None method.
-    - Response elapsed time was not measured or checked against 500 ms
+    - Request timeout was not set to 500 ms.
+    - Response elapsed time was not measured or checked against 500 ms.
+    - Request body was not converted to string JSON
+    - Improper domain name extraction, it is better to use urlparse
+    - The check cycles to be 15 seconds regardless of endpoints needed a change as the response delay wasn't 
+      taken into account
 
