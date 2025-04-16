@@ -1,25 +1,30 @@
+import time
 import yaml
 import requests
 import time
 from collections import defaultdict
+from urllib.parse import urlparse
 
 # Function to load configuration from the YAML file
 def load_config(file_path):
     with open(file_path, 'r') as file:
         return yaml.safe_load(file)
 
+def get_domain(url):
+    parsed_url = urlparse(url)
+    return parsed_url.hostname
+
 # Function to perform health checks
 def check_health(endpoint):
     url = endpoint['url']
-    method = endpoint.get('method')
-    method = method if method else 'GET'
+    method = endpoint.get('method', 'GET').upper()
     headers = endpoint.get('headers')
     body = endpoint.get('body')
+    jsbody = json.loads(body) if body else None
 
     try:
-        response = requests.request(method, url, headers=headers, json=body)
+        response = requests.request(method, url, headers=headers, json=jsbody, timeout=0.5)
         elapsed_ms = response.elapsed.total_seconds() * 1000
-        # print("ELAPSED %s" % elapsed_ms)
         if elapsed_ms > 500:
             return "DOWN"
 
@@ -36,12 +41,10 @@ def monitor_endpoints(file_path):
     domain_stats = defaultdict(lambda: {"up": 0, "total": 0})
 
     while True:
+        cycle_start = time.time()
         for endpoint in config:
-            # print("ENDPOINT %s" % endpoint)
-            domain = endpoint["url"].split("//")[-1].split("/")[0]
-            # print("DOMAIN %s" % domain)
+            domain = get_domain(endpoint["url"])
             result = check_health(endpoint)
-            # print("RESULT %s" % result)
 
             domain_stats[domain]["total"] += 1
             if result == "UP":
@@ -53,7 +56,9 @@ def monitor_endpoints(file_path):
             print(f"{domain} has {availability}% availability percentage")
 
         print("---")
-        time.sleep(15)
+        elapsed = time.time() - cycle_start
+        sleep_duration = max(0, 15 - elapsed)
+        time.sleep(sleep_duration)
 
 # Entry point of the program
 if __name__ == "__main__":
